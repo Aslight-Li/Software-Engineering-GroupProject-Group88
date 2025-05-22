@@ -970,32 +970,58 @@ public class Nutllet extends Application {
     }
     // 新增保存方法
     private void saveExpensesToCSV(String filePath) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-            // 写入文件头
-            writer.write("微信支付账单明细 微信昵称：[Q·ð 起始时间：[2025-04-10 09:40:16] 终止时间：[2025-04-18 19:55:33]");
-            writer.newLine();
-            writer.write("----------------------微信支付账单明细列表--------------------");
-            writer.newLine();
-            writer.write("交易时间,交易类型,交易对方,商品,收/支,金额(元),支付方式,当前状态,交易单号,商户单号,备注");
-            writer.newLine();
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(filePath), StandardCharsets.UTF_8);
 
-            // 写入所有记录
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            for (Expense expense : expenses) {
-                String line = String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"¥%.2f\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"",
-                        expense.getTransactionTime().format(formatter),
-                        "商户消费",
-                        expense.getCounterpart(),
-                        expense.getProduct(),
-                        expense.getType(),
-                        expense.getAmount(),
-                        "零钱",
-                        expense.getStatus(),
-                        "", "", ""
-                );
-                writer.write(line);
-                writer.newLine();
+            int headerIndex = -1;
+            int dataEndIndex = -1;
+            for (int i = 0; i < lines.size(); i++) {
+                String line = lines.get(i);
+                if (headerIndex == -1 && line.startsWith("交易时间,交易类型,交易对方,商品,收/支,金额(元),支付方式,当前状态")) {
+                    headerIndex = i;
+                }
+                if (headerIndex != -1 && i > headerIndex && (line.startsWith("----------------------") || line.isEmpty())) {
+                    dataEndIndex = i;
+                    break;
+                }
             }
+            if (dataEndIndex == -1) dataEndIndex = lines.size();
+
+            // 保留非商户消费的原始数据行
+            List<String> existingDataLines = lines.subList(headerIndex + 1, dataEndIndex).stream()
+                .filter(line -> {
+                    String[] parts = line.split(",");
+                    return parts.length > 1 && !parts[1].contains("商户消费");
+                })
+                .collect(Collectors.toList());
+
+            // 生成当前所有有效数据行（包括新添加的）
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            List<String> currentDataLines = expenses.stream()
+                .map(e -> String.format("\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%.2f\",\"%s\",\"%s\"",
+                    e.getTransactionTime().format(formatter),
+                    "商户消费", // 强制类型为商户消费
+                    e.getCounterpart(),
+                    e.getProduct(),
+                    e.getType(),
+                    e.getAmount(),
+                    "零钱",
+                    e.getStatus()))
+                .collect(Collectors.toList());
+
+            // 合并数据：保留原始非商户消费数据 + 当前所有商户消费数据
+            List<String> mergedData = new ArrayList<>();
+            mergedData.addAll(existingDataLines);
+            mergedData.addAll(currentDataLines);
+
+            // 构建新的文件内容
+            List<String> newLines = new ArrayList<>();
+            newLines.addAll(lines.subList(0, headerIndex + 1));
+            newLines.addAll(mergedData);
+            newLines.addAll(lines.subList(dataEndIndex, lines.size()));
+
+            Files.write(Paths.get(filePath), newLines, StandardCharsets.UTF_8);
+
         } catch (IOException e) {
             new Alert(Alert.AlertType.ERROR, "保存失败: " + e.getMessage()).show();
         }
@@ -1319,6 +1345,7 @@ public class Nutllet extends Application {
                     
                     // 确保字段正确性
                     if ("支出".equals(record.get("收/支")) && 
+                    	"商户消费".equals(record.get("交易类型"))&&
                         "支付成功".equals(record.get("当前状态"))) {
                         
                         // 明确解析所有必要字段

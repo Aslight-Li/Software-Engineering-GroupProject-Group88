@@ -66,6 +66,22 @@ public class EP_FinancialAnalysis extends Application {
         mainContainer.setSpacing(20);
         mainContainer.setStyle("-fx-background-color: " + backgroundColor + ";");
 
+        Button backButton = new Button("← Back");
+        backButton.setStyle(
+                "-fx-background-color: #11659A;" +
+                        "-fx-text-fill: white;" +
+                        "-fx-font-size: 14px;" +
+                        "-fx-padding: 6 14;" +
+                        "-fx-background-radius: 6;" +
+                        "-fx-font-weight: bold;" +
+                        "-fx-cursor: hand;"
+        );
+        backButton.setOnAction(e -> {
+            try { new NutlletEnterprise().start(new Stage()); primaryStage.close(); } catch (Exception ex) { ex.printStackTrace(); }
+        });
+        HBox backBox = new HBox(backButton);
+        backBox.setAlignment(Pos.TOP_LEFT);
+
         Text title = new Text("Financial Analysis -- Enterprise");
         title.setFont(Font.font("Arial", FontWeight.BOLD, 36));
         title.setFill(Color.web("#11659A"));
@@ -151,7 +167,7 @@ public class EP_FinancialAnalysis extends Application {
         contentContainer.setStyle("-fx-background-color: " + backgroundColor + ";");
         contentContainer.setOpacity(0);
 
-        contentContainer.getChildren().addAll(title, pageButton, spendingTrendChart,
+        contentContainer.getChildren().addAll(backBox,title, pageButton, spendingTrendChart,
                 categoryTitle, categorySpendingChart, methodTitle, paymentMethodChart,
                 webView, aiPane, aiButton);
 

@@ -35,7 +35,7 @@ public class NutlletEnterprise extends Application {
         root.setTop(createHeader());
         root.setCenter(createMainContent());
         root.setBottom(createBottomNav(primaryStage));
-        root.setRight(createSidebar());  // 添加右侧栏
+        root.setRight(createSidebar(primaryStage));  // 添加右侧栏
 
         // 包裹主布局的滚动容器
         ScrollPane scrollPane = new ScrollPane(root);
@@ -220,7 +220,7 @@ public class NutlletEnterprise extends Application {
         return navBar;
     }
 
-    private VBox createSidebar() {
+    private VBox createSidebar(Stage primaryStage) {
         VBox sidebar = new VBox(20);
         sidebar.setPadding(new Insets(20));
         sidebar.setBackground(new Background(new BackgroundFill(
@@ -277,14 +277,10 @@ public class NutlletEnterprise extends Application {
         text3.setTextFill(Color.BLACK);
         text3.setWrapText(true);
 
-        Button askNowButton = new Button("Ask Now!");
+        Button askNowButton = new Button("View detailed AI recommendations!");
         stylePrimaryButton(askNowButton); // 使用与"View More Details"按钮相同的样式
         askNowButton.setOnAction(e -> {
-            try {
-                java.awt.Desktop.getDesktop().browse(new java.net.URI("https://chat.deepseek.com"));
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+            try { new EP_FinancialAnalysis().start(new Stage()); primaryStage.close(); } catch (Exception ex) { ex.printStackTrace(); }
         });
 
         VBox card3 = new VBox(10, title3, text3, askNowButton);
